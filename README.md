@@ -36,7 +36,7 @@ Go to the project directory
 Clone the project
 
 ```bash
-  git clone https://github.com/obaek/Astronomical-Distances-PI
+  git clone https://github.com/obaek/Astronomical-Distances-PI.git
 ```
 Note: calculate_distances.py and object_type_map.py need to live in the same directory.
 
