@@ -23,7 +23,7 @@ The script makes Simbad TAP queries and returns the following information:
 Install required Python modules:
 
 ```bash
-  pip3 install pandas astropy astroquery==0.4.11
+  pip3 install pandas openpyxl astropy astroquery==0.4.11
 ```
 Note: Any version of astroquery 0.4.8 or newer should work, but tested on 0.4.11
 
