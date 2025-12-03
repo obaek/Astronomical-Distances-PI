@@ -215,38 +215,41 @@ def parse_objects_file(filepath):
     
     return objects
 
-def main():
-    parser = argparse.ArgumentParser(description='Calculate astronomical distances and fetch coordinates via Simbad TAP.')
-    parser.add_argument('input_file', nargs='?', help='Path to the input text file containing object names')
-    parser.add_argument('--output', help='Path to the output Excel file')
-    args = parser.parse_args()
-
-    input_file = args.input_file
+def process_file(input_file, output_file=None, progress_callback=None):
+    """
+    Process the input file and write results to the output file.
     
-    if input_file is None:
-        input_file = input("Enter input filename: ")
+    Args:
+        input_file (str): Path to the input text file.
+        output_file (str, optional): Path to the output Excel file. If None, derived from input_file.
+        progress_callback (callable, optional): Function to call with status updates (str).
+    """
+    def log(message):
+        print(message)
+        if progress_callback:
+            progress_callback(message)
 
     # Determine output file path based on input file location
-    if args.output:
-        output_file = args.output
+    if output_file:
+        final_output_file = output_file
     else:
         input_dir = os.path.dirname(os.path.abspath(input_file))
         output_filename = 'Astronomical_Distances_TAP.xlsx'
-        output_file = os.path.join(input_dir, output_filename)
+        final_output_file = os.path.join(input_dir, output_filename)
     
-    print(f"Reading objects from {input_file}...")
+    log(f"Reading objects from {input_file}...")
     object_names = parse_objects_file(input_file)
     
     if not object_names:
-        print("No objects found or file could not be read.")
+        log("No objects found or file could not be read.")
         return
 
-    print(f"Found {len(object_names)} objects.")
+    log(f"Found {len(object_names)} objects.")
     
     results = []
     
-    for name in object_names:
-        print(f"Processing {name}...")
+    for i, name in enumerate(object_names):
+        log(f"Processing {name} ({i+1}/{len(object_names)})...")
         z, dist_mly, dist_pc, method, ra, dec, mag, otype = get_object_data_tap(name)
         
         results.append({
@@ -264,12 +267,18 @@ def main():
         time.sleep(0.1)
         
     df = pd.DataFrame(results)
-    df = df[['Object Name', 'Object Type', 'RA', 'Dec', 'Magnitude', 'Redshift', 'Distance (Parsecs)', 'Distance (Million Light Years)', 'Method']]
+    # Ensure all columns exist even if empty
+    expected_cols = ['Object Name', 'Object Type', 'RA', 'Dec', 'Magnitude', 'Redshift', 'Distance (Parsecs)', 'Distance (Million Light Years)', 'Method']
+    for col in expected_cols:
+        if col not in df.columns:
+            df[col] = 'N/A'
+            
+    df = df[expected_cols]
     
-    print(f"Writing results to {output_file}...")
+    log(f"Writing results to {final_output_file}...")
     try:
         # Use ExcelWriter with openpyxl engine to format the output
-        with pd.ExcelWriter(output_file, engine='openpyxl') as writer:
+        with pd.ExcelWriter(final_output_file, engine='openpyxl') as writer:
             df.to_excel(writer, index=False, sheet_name='Distances')
             
             # Get the workbook and worksheet objects
@@ -281,13 +290,32 @@ def main():
             
             # Auto-adjust column widths
             for column in df:
-                column_length = max(df[column].astype(str).map(len).max(), len(column))
+                # Calculate max length of column content and header
+                max_len = max(df[column].astype(str).map(len).max(), len(column))
                 col_idx = df.columns.get_loc(column)
-                writer.sheets['Distances'].column_dimensions[chr(65 + col_idx)].width = column_length + 2
+                worksheet.column_dimensions[chr(65 + col_idx)].width = max_len + 2
                 
-        print("Done.")
+        log("Done.")
     except Exception as e:
-        print(f"Error writing to Excel: {e}")
+        log(f"Error writing to Excel: {e}")
+
+def main():
+    parser = argparse.ArgumentParser(description='Calculate astronomical distances and fetch coordinates via Simbad TAP.')
+    parser.add_argument('input_file', nargs='?', help='Path to the input text file containing object names')
+    parser.add_argument('--output', help='Path to the output Excel file')
+    args = parser.parse_args()
+
+    input_file = args.input_file
+    
+    if input_file is None:
+        try:
+            input_file = input("Enter input filename: ")
+        except (RuntimeError, EOFError):
+            print("No input file provided and stdin is not available.")
+            return
+
+    if input_file:
+        process_file(input_file, args.output)
 
 if __name__ == "__main__":
     main()
