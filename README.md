@@ -15,30 +15,16 @@ The script makes Simbad TAP queries and returns the following information:
 8. Distance (Million Light Years)
 9. Method
 
-
-
-
 ## Installation
 
 Install required Python modules:
 
 ```bash
-  pip3 install pandas openpyxl astropy astroquery==0.4.11
+  pip3 install pandas tkinterdnd openpyxl astropy astroquery==0.4.11
 ```
 Note: Any version of astroquery 0.4.8 or newer should work, but tested on 0.4.11
 
-Go to the project directory
-
-```bash
-  cd my-project
-```
-
-Clone the project
-
-```bash
-  git clone https://github.com/obaek/Astronomical-Distances-PI.git
-```
-Note: calculate_distances.py and object_type_map.py need to live in the same directory.
+Download the files (or clone the project) and place all files in the same directory.
 
 ## Usage Guide
 
@@ -56,16 +42,21 @@ Check the "Write to file" box at the bottom of the dialog.
 
 Click OK. Note the location of the generated objects.txt file.
 
-Step 2: Run the script
+Step 2: Usage (command line)
 
 ```bash
-  python3 calculate_distances.py [/path/to/file/]objects.txt
+  python3 calculate_distances.py [-h] [--output OUTPUT] [input_file]
 ```
+positional arguments:
+  input_file       Path to the input text file containing object names
 
-Optionally
+options:
+  -h, --help       show this help message and exit
+  --output OUTPUT  Path to the output Excel file
+
+Graphical User Interface
 
 ```bash
-  python3 calculate_distances.py
-  Enter input filename: [/path/to/file/]objects.txt
+  python3 calculate_distances_gui
 ```
-If all goes well, Astronomical_Distances_TAP.xlsx will be written to the objects.txt directory.
+
