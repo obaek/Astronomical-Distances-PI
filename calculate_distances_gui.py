@@ -61,6 +61,14 @@ class DistanceCalculatorGUI(BaseClass):
         else:
             ttk.Label(input_frame, text="(Install tkinterdnd2 for Drag & Drop support)", foreground="gray").grid(row=1, column=0, columnspan=3, pady=5)
 
+        # --- Output Section ---
+        ttk.Label(input_frame, text="Output Dir:").grid(row=2, column=0, sticky="w", pady=5)
+        self.output_entry = ttk.Entry(input_frame)
+        self.output_entry.grid(row=2, column=1, sticky="ew", padx=5, pady=5)
+        
+        output_browse_btn = ttk.Button(input_frame, text="Browse...", command=self.browse_output_directory)
+        output_browse_btn.grid(row=2, column=2, pady=5)
+
         # --- Actions ---
         action_frame = ttk.Frame(self)
         action_frame.grid(row=1, column=0, pady=5)
@@ -86,6 +94,12 @@ class DistanceCalculatorGUI(BaseClass):
         if filename:
             self.input_entry.delete(0, tk.END)
             self.input_entry.insert(0, filename)
+
+    def browse_output_directory(self):
+        directory = filedialog.askdirectory()
+        if directory:
+            self.output_entry.delete(0, tk.END)
+            self.output_entry.insert(0, directory)
 
     def drop_file(self, event):
         # Event data might be enclosed in braces if it contains spaces
@@ -120,12 +134,21 @@ class DistanceCalculatorGUI(BaseClass):
         self.log_text.delete(1.0, tk.END)
         self.log_text.config(state='disabled')
         
+        # Get output directory
+        output_dir = self.output_entry.get().strip()
+        output_file = None
+        if output_dir:
+            if not os.path.exists(output_dir):
+                 messagebox.showerror("Error", f"Output directory not found: {output_dir}")
+                 return
+            output_file = os.path.join(output_dir, 'Astronomical_Distances_TAP.xlsx')
+
         # Run in a separate thread
-        thread = threading.Thread(target=self.run_logic, args=(input_file,))
+        thread = threading.Thread(target=self.run_logic, args=(input_file, output_file))
         thread.daemon = True
         thread.start()
 
-    def run_logic(self, input_file):
+    def run_logic(self, input_file, output_file=None):
         try:
             # We pass self.log as the callback
             # Since tkinter is not thread-safe for GUI updates, we should ideally use after() or queue
@@ -135,7 +158,7 @@ class DistanceCalculatorGUI(BaseClass):
             def safe_log(msg):
                 self.after(0, lambda: self.log(msg))
                 
-            calculate_distances.process_file(input_file, progress_callback=safe_log)
+            calculate_distances.process_file(input_file, output_file=output_file, progress_callback=safe_log)
             
             self.after(0, lambda: messagebox.showinfo("Success", "Processing complete!"))
             
